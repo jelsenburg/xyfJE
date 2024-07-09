@@ -1,0 +1,71 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+// Set your access point network credentials
+const char* ssid = "List_Tender";
+const char* password = "12345678";
+
+ESP8266WebServer server(80); // Create a web server on port 80
+
+// HTML form to collect data
+const char* htmlForm = R"rawliteral(
+<!DOCTYPE HTML><html><head>
+  <title>Vessel Monitoring Setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head><body>
+  <h2>Vessel Monitoring Setup</h2>
+  <form action="/submit" method="post">
+    Vessel Name: <input type="text" name="vesselName"><br>
+    Roll Alert Set Point: <input type="text" name="rollAlert"><br>
+    Pitch Alert Set Point: <input type="text" name="pitchAlert"><br>
+    Contact Number 1: <input type="text" name="contact1"><br>
+    Contact Number 2: <input type="text" name="contact2"><br>
+    Contact Number 3: <input type="text" name="contact3"><br>
+    <input type="submit" value="Submit">
+  </form>
+</body></html>)rawliteral";
+
+void handleRoot() {
+  server.send(200, "text/html", htmlForm);
+}
+
+void handleFormSubmit() {
+  if (server.method() != HTTP_POST) {
+    server.send(405, "text/plain", "Method Not Allowed");
+  } else {
+    String message = "Form received:\n";
+    message += "Vessel Name: ";
+    message += server.arg("vesselName");
+    message += "\nRoll Alert Set Point: ";
+    message += server.arg("rollAlert");
+    message += "\nPitch Alert Set Point: ";
+    message += server.arg("pitchAlert");
+    message += "\nContact Number 1: ";
+    message += server.arg("contact1");
+    message += "\nContact Number 2: ";
+    message += server.arg("contact2");
+    message += "\nContact Number 3: ";
+    message += server.arg("contact3");
+    server.send(200, "text/plain", message);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Start the access point
+  WiFi.softAP(ssid, password);
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(myIP);
+
+  // Handle web server
+  server.on("/", handleRoot);
+  server.on("/submit", handleFormSubmit);
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}
